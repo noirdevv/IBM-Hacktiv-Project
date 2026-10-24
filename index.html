@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spotify Analyzer Dashboard</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Tailwind custom config — light theme with vibrant accents -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              sp: {
+                bg:      '#F4F6F9',   // main background
+                sidebar: '#FFFFFF',   // sidebar bg
+                card:    '#FFFFFF',   // card bg
+                border:  '#E8ECF0',   // card borders
+                text:    '#1A2035',   // primary text
+                muted:   '#8A94A6',   // secondary text
+                pink:    '#E91E63',   // magenta/pink accent
+                green:   '#1DB954',   // spotify green
+                purple:  '#6C5CE7',   // purple accent
+                cyan:    '#00CEC9',   // cyan accent
+                orange:  '#F39C12',   // orange accent
+              },
+            },
+            fontFamily: {
+              sans: ['"Inter"', 'system-ui', 'sans-serif'],
+            },
+            boxShadow: {
+              card:  '0 2px 12px rgba(0,0,0,0.07)',
+              hover: '0 8px 28px rgba(0,0,0,0.13)',
+            },
+          },
+        },
+      };
+    </script>
+
+    <!-- Google Font: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- Custom stylesheet -->
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       ROOT SHELL — sidebar (fixed) + right column (scrollable)
+       ═══════════════════════════════════════════════════════════ -->
+  <body class="bg-sp-bg font-sans text-sp-text antialiased flex min-h-screen">
+
+    <!-- ══════════════════ SIDEBAR ══════════════════ -->
+    <aside id="sidebar" class="sidebar">
+
+      <!-- Logo block -->
+      <div class="sidebar-logo">
+        <div class="logo-icon">
+          <!-- Official Spotify logo icon (full green circle + white waves) -->
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="12" fill="#1DB954"/>
+            <path d="M17.25 16.198c-.195 0-.39-.06-.553-.184-1.7-1.136-3.833-1.736-6.12-1.736-1.273 0-2.554.17-3.808.504a.935.935 0 01-1.145-.66.935.935 0 01.66-1.145c1.413-.38 2.862-.572 4.293-.572 2.603 0 5.045.68 7.07 1.967a.935.935 0 01-.397 1.826z" fill="white"/>
+            <path d="M18.75 12.9c-.244 0-.488-.075-.697-.232-2.077-1.387-5.243-2.187-8.303-2.187-1.623 0-3.189.248-4.655.737a1.125 1.125 0 01-.712-2.135c1.65-.55 3.41-.827 5.367-.827 3.45 0 7.013.915 9.698 2.573a1.125 1.125 0 01-.698 2.071z" fill="white"/>
+            <path d="M20.25 9.375c-.247 0-.495-.065-.718-.2C17.052 7.5 13.567 6.5 9.75 6.5c-1.928 0-3.836.281-5.67.836a1.313 1.313 0 01-.826-2.493C5.42 4.278 7.563 3.875 9.75 3.875c4.252 0 8.17 1.1 11.222 3.183a1.312 1.312 0 01-.722 2.317z" fill="white"/>
+          </svg>
+        </div>
+        <div>
+          <span class="logo-title">Spotify</span>
+          <span class="logo-sub">Analyzer</span>
+        </div>
+      </div>
+
+      <!-- Sidebar footer -->
+      <div class="sidebar-footer">
+        <div class="user-avatar">SA</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-600 text-sp-text truncate">Analyst</p>
+          <p class="text-[10px] text-sp-muted truncate">Music Intelligence</p>
+        </div>
+        <!-- Status dot -->
+        <span class="w-2 h-2 rounded-full bg-sp-green flex-shrink-0"></span>
+      </div>
+    </aside>
+
+    <!-- ══════════════════ RIGHT COLUMN ══════════════════ -->
+    <div class="main-wrapper">
+
+      <!-- ────────── TOP HEADER BAR ────────── -->
+      <header class="top-header">
+        <!-- Left: hamburger + page title -->
+        <div class="flex items-center gap-4">
+          <button id="btnToggleSidebar" class="sidebar-toggle" aria-label="Toggle sidebar">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <rect x="1" y="3" width="16" height="2" rx="1" fill="currentColor"/>
+              <rect x="1" y="8" width="10" height="2" rx="1" fill="currentColor"/>
+              <rect x="1" y="13" width="16" height="2" rx="1" fill="currentColor"/>
+            </svg>
+          </button>
+          <div>
+            <h1 class="text-base font-700 text-sp-text leading-none">Dashboard</h1>
+            <p class="text-[11px] text-sp-muted mt-0.5">Music Intelligence Overview</p>
+          </div>
+        </div>
+
+        <!-- Right: filters + icons -->
+        <div class="header-right">
+          <!-- Inline filter selects -->
+          <div class="header-filters">
+            <select id="filterYear"      class="hdr-select"><option value="">All Years</option></select>
+            <select id="filterGenre"     class="hdr-select"><option value="">All Genres</option></select>
+            <select id="filterArtist"    class="hdr-select"><option value="">All Artists</option></select>
+            <select id="filterAlbumType" class="hdr-select"><option value="">All Types</option></select>
+            <select id="filterFollowers" class="hdr-select">
+              <option value="">All Tiers</option>
+              <option value="micro">Micro &lt;100K</option>
+              <option value="mid">Mid 100K–1M</option>
+              <option value="macro">Macro 1M–10M</option>
+              <option value="mega">Mega &gt;10M</option>
+            </select>
+            <button id="btnReset" class="hdr-reset-btn" title="Reset filters">✕</button>
+          </div>
+
+          <!-- Status badge -->
+          <div class="flex items-center gap-1.5 text-[11px] text-sp-muted">
+            <span id="loadingDot" class="pulse-dot"></span>
+            <span id="loadingText">Loading…</span>
+          </div>
+
+          <!-- Notification icon -->
+          <button class="icon-btn" aria-label="Notifications">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>
+          </button>
+
+          <!-- Avatar -->
+          <div class="header-avatar">A</div>
+        </div>
+      </header>
+
+      <!-- ────────── MAIN CONTENT AREA ────────── -->
+      <main class="main-content">
+
+        <!-- ═══ ROW 1: KPI CARDS ═══ -->
+        <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6" aria-label="KPI">
+
+          <div class="kpi-card kpi-pink">
+            <div class="kpi-icon-wrap">
+              <svg viewBox="0 0 20 20" fill="white" width="18" height="18"><path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z"/></svg>
+            </div>
+            <div class="kpi-body">
+              <p class="kpi-label">Total Tracks</p>
+              <p class="kpi-value" id="kpiTotalTracks">—</p>
+              <p class="kpi-sub"  id="kpiTotalTracksSub"></p>
+            </div>
+            <div class="kpi-sparkline">
+              <svg viewBox="0 0 60 24" fill="none" class="w-full opacity-40">
+                <polyline points="0,20 10,14 20,16 30,8 40,12 50,5 60,9" stroke="white" stroke-width="2" fill="none"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="kpi-card kpi-green">
+            <div class="kpi-icon-wrap">
+              <svg viewBox="0 0 20 20" fill="white" width="18" height="18"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/></svg>
+            </div>
+            <div class="kpi-body">
+              <p class="kpi-label">Total Artists</p>
+              <p class="kpi-value" id="kpiTotalArtists">—</p>
+              <p class="kpi-sub"  id="kpiTotalArtistsSub"></p>
+            </div>
+            <div class="kpi-sparkline">
+              <svg viewBox="0 0 60 24" fill="none" class="w-full opacity-40">
+                <polyline points="0,18 10,10 20,14 30,6 40,10 50,4 60,8" stroke="white" stroke-width="2" fill="none"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="kpi-card kpi-purple">
+            <div class="kpi-icon-wrap">
+              <svg viewBox="0 0 20 20" fill="white" width="18" height="18"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            </div>
+            <div class="kpi-body">
+              <p class="kpi-label">Avg Popularity</p>
+              <p class="kpi-value" id="kpiAvgPopularity">—</p>
+              <p class="kpi-sub"  id="kpiAvgPopularitySub"></p>
+            </div>
+            <div class="kpi-sparkline">
+              <svg viewBox="0 0 60 24" fill="none" class="w-full opacity-40">
+                <polyline points="0,16 10,12 20,18 30,8 40,14 50,6 60,10" stroke="white" stroke-width="2" fill="none"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="kpi-card kpi-cyan">
+            <div class="kpi-icon-wrap">
+              <svg viewBox="0 0 20 20" fill="white" width="18" height="18"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v1h8v-1zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-1a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v1h-3zM4.75 12.094A5.973 5.973 0 004 15v1H1v-1a3 3 0 013.75-2.906z"/></svg>
+            </div>
+            <div class="kpi-body">
+              <p class="kpi-label">Avg Followers</p>
+              <p class="kpi-value" id="kpiAvgFollowers">—</p>
+              <p class="kpi-sub"  id="kpiAvgFollowersSub"></p>
+            </div>
+            <div class="kpi-sparkline">
+              <svg viewBox="0 0 60 24" fill="none" class="w-full opacity-40">
+                <polyline points="0,22 10,16 20,19 30,10 40,15 50,7 60,11" stroke="white" stroke-width="2" fill="none"/>
+              </svg>
+            </div>
+          </div>
+
+          <div class="kpi-card kpi-orange">
+            <div class="kpi-icon-wrap">
+              <svg viewBox="0 0 20 20" fill="white" width="18" height="18"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+            </div>
+            <div class="kpi-body">
+              <p class="kpi-label">Avg Duration</p>
+              <p class="kpi-value" id="kpiAvgDuration">—</p>
+              <p class="kpi-sub"  id="kpiAvgDurationSub"></p>
+            </div>
+            <div class="kpi-sparkline">
+              <svg viewBox="0 0 60 24" fill="none" class="w-full opacity-40">
+                <polyline points="0,14 10,18 20,12 30,16 40,9 50,13 60,7" stroke="white" stroke-width="2" fill="none"/>
+              </svg>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ═══ ROW 2: Line Chart + Donut ═══ -->
+        <section class="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-6">
+
+          <!-- Release Trends (wider) -->
+          <div class="chart-card lg:col-span-3">
+            <div class="chart-card-header">
+              <div>
+                <h3 class="chart-title">Release Trends Over Time</h3>
+                <p class="chart-desc">Tracks released per year</p>
+              </div>
+              <span class="chart-badge badge-pink">Line Chart</span>
+            </div>
+            <div class="chart-wrap" style="height:220px">
+              <canvas id="chartLine"></canvas>
+            </div>
+          </div>
+
+          <!-- Top Genres Donut (narrower) -->
+          <div class="chart-card lg:col-span-2">
+            <div class="chart-card-header">
+              <div>
+                <h3 class="chart-title">Top Genres</h3>
+                <p class="chart-desc">Distribution by track count</p>
+              </div>
+              <span class="chart-badge badge-purple">Donut</span>
+            </div>
+            <div class="chart-wrap" style="height:220px">
+              <canvas id="chartDonut"></canvas>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ═══ ROW 3: Top 10 Tracks + Scatter ═══ -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+
+          <!-- Top 10 Tracks -->
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <h3 class="chart-title">Top 10 Most Popular Tracks</h3>
+                <p class="chart-desc">By Spotify popularity score (0–100)</p>
+              </div>
+              <span class="chart-badge badge-green">Bar Chart</span>
+            </div>
+            <div class="chart-wrap" style="height:260px">
+              <canvas id="chartTopTracks"></canvas>
+            </div>
+          </div>
+
+          <!-- Scatter -->
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <h3 class="chart-title">Artist Popularity vs. Followers</h3>
+                <p class="chart-desc">Popularity score × follower count</p>
+              </div>
+              <span class="chart-badge badge-cyan">Scatter</span>
+            </div>
+            <div class="chart-wrap" style="height:260px">
+              <canvas id="chartScatter"></canvas>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ═══ ROW 4: Album Type + Explicit | Top Artists + Table ═══ -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+
+          <!-- Left column: Album Type + Explicit stacked -->
+          <div class="flex flex-col gap-4">
+
+            <!-- Track Popularity by Album Type -->
+            <div class="chart-card flex-1">
+              <div class="chart-card-header">
+                <div>
+                  <h3 class="chart-title">Popularity by Album Type</h3>
+                  <p class="chart-desc">Avg / max / min popularity per type</p>
+                </div>
+                <span class="chart-badge badge-orange">Bar</span>
+              </div>
+              <div class="chart-wrap" style="height:200px">
+                <canvas id="chartBoxPlot"></canvas>
+              </div>
+            </div>
+
+            <!-- Explicit Content Proportion -->
+            <div class="chart-card flex-1">
+              <div class="chart-card-header">
+                <div>
+                  <h3 class="chart-title">Explicit Content Proportion</h3>
+                  <p class="chart-desc">Explicit vs. non-explicit tracks</p>
+                </div>
+                <span class="chart-badge badge-pink">Pie</span>
+              </div>
+              <div class="chart-wrap" style="height:200px">
+                <canvas id="chartPie"></canvas>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Right column: Top Artists + Summary Table stacked -->
+          <div class="flex flex-col gap-4">
+
+            <!-- Top 10 Artists -->
+            <div class="chart-card flex-1">
+              <div class="chart-card-header">
+                <div>
+                  <h3 class="chart-title">Top 10 Artists by Total Tracks</h3>
+                  <p class="chart-desc">Most prolific artists in dataset</p>
+                </div>
+                <span class="chart-badge badge-purple">Bar</span>
+              </div>
+              <div class="chart-wrap" style="height:200px">
+                <canvas id="chartTopArtists"></canvas>
+              </div>
+            </div>
+
+            <!-- Data Summary Table -->
+            <div class="chart-card flex-1 overflow-hidden">
+              <div class="chart-card-header">
+                <div>
+                  <h3 class="chart-title">Top Tracks Summary</h3>
+                  <p class="chart-desc">Highest popularity tracks</p>
+                </div>
+                <span class="chart-badge badge-green">Table</span>
+              </div>
+              <div class="overflow-auto" style="max-height:188px">
+                <table class="summary-table w-full">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Track</th>
+                      <th>Artist</th>
+                      <th>Pop.</th>
+                      <th>Type</th>
+                    </tr>
+                  </thead>
+                  <tbody id="summaryTableBody">
+                    <tr><td colspan="5" class="text-center text-sp-muted py-4 text-xs">Loading…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+        </section>
+
+      </main>
+
+      <!-- ────────── FOOTER ────────── -->
+      <footer class="text-center text-[11px] text-sp-muted py-4 border-t border-sp-border">
+        Spotify Analyzer Dashboard &mdash; Built with Chart.js &amp; Tailwind CSS
+      </footer>
+    </div><!-- /main-wrapper -->
+
+    <script src="script.js"></script>
+  </body>
+</html>
